@@ -22,7 +22,7 @@
   <section id="cover">
     <!-- loading a video as the background -->
     <video class="fullscreen canvas-center" playsinline="" autoplay="" muted="" loop="">
-      <source src="assets/intro.mp4" type="video/mp4">
+      <source src="assets/orca.mp4" type="video/mp4">
     </video>
     <div id="intro">
       <h1>A GeoNarrative Template</h1>
@@ -114,7 +114,7 @@
 
   <script>
     // 1. Declare the maps, script panels, and different thematic layers.
-    let map, scriptPanel = scrollama(), countiesLayer, cellTowersLayer;
+    let map, scriptPanel = scrollama(), countiesLayer, cellTowersLayer, sensitiveLayer;
 
     // 2. Intialize the layout.
    
@@ -170,11 +170,13 @@
     async function geojsonFetch() {
 
       // 6 wait till the data of washington counties and celltowers are fully loaded.
-      let response, counties, celltowers;
+      let response, celltowers, counties, sensitive;
       response = await fetch("assets/wacountydata.geojson");
       counties = await response.json();
       response = await fetch("assets/celltowers.geojson");
       celltowers = await response.json();
+      response = await fetch("assets/sensitive.geojson");
+      sensitive = await response.json();
 
 
       // 7. Trigger operations inside of the the ()=> {} funciton while loading the map.
@@ -191,6 +193,11 @@
           data: counties
         });
 
+        map.addSource('sensitive-src', {
+          type: 'geojson',
+          data: sensitive
+        });
+
         //declare layers
 
         countiesLayer = {
@@ -204,6 +211,7 @@
           }
         };
 
+
         cellTowersLayer = {
           'id': 'celltowers-polygons',
           'type': 'fill',
@@ -215,6 +223,20 @@
 
           }
         };
+
+        sensitiveLayer = {
+          'id': 'sensitive-polygons',
+          'type': 'fill',
+          'source': 'sensitive-src',
+          'minzoom': 5,
+          'paint': {
+            'fill-color': '#0080ff',
+            'fill-opacity': 0.5
+
+          }
+        };
+
+
 
         // 9. Initialize the script panel
         scriptPanel
@@ -234,24 +256,24 @@
           if (index === 0) { // When enter the first scene
 
             map.flyTo({
-              center: [-124.93, 47.33],
-              zoom: 7.5,
-              pitch: 20,
-              speed: 0.45
+              center: [-122.4121036, 47.6131229],
+              zoom: 12,
+              pitch: 0,
+              speed: 0.5
             }); // fly to a new location
             
-            if (typeof (map.getSource('counties-src')) == 'undefined') { //if the map source 'counties-src' does not exist
-              map.addSource('counties-src', {
+            if (typeof (map.getSource('celltowers-src')) == 'undefined') { //if the map source 'counties-src' does not exist
+              map.addSource('celltowers-src', {
                 type: 'geojson',
-                data: counties
+                data: celltowers
               }); // reload the map source of 'counties-src'
             } else {
-              map.getSource('counties-src').setData(counties); // if the map source does not exist, relaod the data counties to the pre-defined map source 'counties-src'.
+              map.getSource('counties-src').setData(celltowers); // if the map source does not exist, relaod the data counties to the pre-defined map source 'counties-src'.
 
             }
 
-            if (!map.getLayer("counties-polygons")) { // if the map layer 'counties-polygons' does not exit
-              map.addLayer(countiesLayer);
+            if (!map.getLayer("celltowers-polygons")) { // if the map layer 'counties-polygons' does not exit
+              map.addLayer(cellTowersLayer);
             }
             document.getElementById("cover").style.visibility = "hidden"; // Hide the cover page
         
@@ -282,24 +304,50 @@
           } else if (index === 2) {
             //Relocate to Seattle
             map.flyTo({
-              center: [-122.4121036, 47.6131229],
-              zoom: 12,
-              pitch: 0,
-              speed: 0.5
+              center: [-124.93, 47.33],
+              zoom: 7.5,
+              pitch: 30,
+              speed: 0.45
 
             });
+
+            if (typeof (map.getSource('counties-src')) == 'undefined') {
+              map.addSource('counties-src', {
+                type: 'geojson',
+                data: counties
+              });
+            } else {
+              map.getSource('counties-src').setData(counties);
+
+            }
+
+            if (!map.getLayer("counties-polygons")) {
+              map.addLayer(countiesLayer);
+            }
 
           } else if (index === 3) {
-            //Relocate to Portland
-            map.flyTo({
-              center: [-122.724366, 45.5428119],
-              zoom: 12,
-              pitch: 60,
-              speed: 0.5
 
+            map.flyTo({
+              center: [-124.93, 47.33],
+              zoom: 7.5,
+              pitch: 70,
+              speed: 0.08
             });
 
-            map.setStyle('mapbox://styles/mapbox/satellite-streets-v10'); // change the base map
+            if (typeof (map.getSource('sensitive-src')) == 'undefined') {
+              map.addSource('sensitive-src', {
+                type: 'geojson',
+                data: sensitive
+              });
+            } else {
+              map.getSource('sensitive-src').setData(sensitive);
+
+            }
+
+            if (!map.getLayer("sesitive-polygons")) {
+              map.addLayer(sensitiveLayer);
+            }
+
           } else if (index === 6) {
 
             map.flyTo({
@@ -319,8 +367,8 @@
           var index = response.index;
 
           if (index === 0) {
-            if (map.getLayer("counties-polygons")) {
-              map.removeLayer('counties-polygons');
+            if (map.getLayer("celltowers-polygons")) {
+              map.removeLayer('celltowers-polygons');
             }
             if (response.direction == 'down') { 
               document.getElementById("cover").style.visibility = "hidden"; // when you scroll down, the cover page will be hided.
@@ -337,14 +385,30 @@
             } else {
               document.getElementById("cover").style.visibility = "visible"; // when you scroll up, the cover page will be shown.
             }
+          } else if (index === 2) {
+            if (map.getLayer("counties-polygons")) {
+              map.removeLayer('counties-polygons');
+            }
+            if (response.direction == 'down') { 
+              document.getElementById("cover").style.visibility = "hidden"; // when you scroll down, the cover page will be hided.
+            } else {
+              document.getElementById("cover").style.visibility = "visible"; // when you scroll up, the cover page will be shown.
+            }
+
           } else if (index === 3) {
-            //exit to Portland
-            map.setStyle('mapbox://styles/mapbox/light-v10');
-          } 
+            if (map.getLayer("sensitive-polygons")) {
+              map.removeLayer('sensitive-polygons');
+            }
+            if (response.direction == 'down') { 
+              document.getElementById("cover").style.visibility = "hidden"; // when you scroll down, the cover page will be hided.
+            } else {
+              document.getElementById("cover").style.visibility = "visible"; // when you scroll up, the cover page will be shown.
+            }
+          }
         }
 
 
-      });
+        });
 
     };
 
